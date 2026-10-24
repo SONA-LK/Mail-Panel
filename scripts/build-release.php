@@ -17,7 +17,9 @@ if (! class_exists(ZipArchive::class)) {
 }
 
 $root = dirname(__DIR__);
-$version = preg_replace('/[^A-Za-z0-9._-]/', '', $argv[1] ?? (require $root.'/config/panel.php')['version'] ?? 'dev');
+// config/panel.php uses Laravel helpers, so read the version from the file instead of loading it.
+preg_match("/'version'\s*=>\s*'([^']+)'/", (string) file_get_contents($root.'/config/panel.php'), $m);
+$version = preg_replace('/[^A-Za-z0-9._-]/', '', $argv[1] ?? $m[1] ?? 'dev');
 $stage = sys_get_temp_dir().'/mailpanel-release-'.bin2hex(random_bytes(4));
 $dist = $root.'/dist';
 
