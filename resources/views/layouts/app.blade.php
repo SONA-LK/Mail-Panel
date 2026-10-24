@@ -1,17 +1,24 @@
+@php($look = $theme->attributes(auth()->user()))
 <!doctype html>
-<html lang="en">
+<html lang="en" data-mode="{{ $look['mode'] }}" data-density="{{ $look['density'] }}"@if($look['palette']) data-palette="{{ $look['palette'] }}"@endif>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
-    <title>@yield('title', 'Mail panel') · {{ config('app.name') }}</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Mail panel') · {{ $theme->name() }}</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ route('theme.css', ['v' => $theme->version()]) }}">
+    @stack('head')
 </head>
 <body>
 @auth
     @php($u = auth()->user())
     <header class="top">
-        <span class="brand">{{ config('app.name') }}</span>
+        <a class="brand" href="{{ route('dashboard') }}">
+            @if($theme->brand()['logo'])<img src="{{ route('brand.logo', ['v' => $theme->version()]) }}" alt="">@endif
+            <span>{{ $theme->name() }}</span>
+        </a>
         <nav>
             <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'on' : '' }}">Dashboard</a>
             <a href="{{ route('mailboxes.index') }}" class="{{ request()->routeIs('mailboxes.*') ? 'on' : '' }}">Mailboxes</a>
@@ -24,11 +31,15 @@
             @if($u->isSuperAdmin())
                 <a href="{{ route('admin.users.index') }}" class="{{ request()->routeIs('admin.users.*') ? 'on' : '' }}">Users</a>
                 <a href="{{ route('admin.domains.index') }}" class="{{ request()->routeIs('admin.domains.*') ? 'on' : '' }}">Domains</a>
+                <a href="{{ route('admin.approvals.index') }}" class="{{ request()->routeIs('admin.approvals.*') ? 'on' : '' }}">Approvals @if($waiting)<span class="badge warn">{{ $waiting }}</span>@endif</a>
+                <a href="{{ route('admin.branding') }}" class="{{ request()->routeIs('admin.branding*') ? 'on' : '' }}">Branding</a>
                 <a href="{{ route('admin.settings') }}" class="{{ request()->routeIs('admin.settings*') ? 'on' : '' }}">Settings</a>
             @endif
         </nav>
         <div class="who">
             <span>{{ $u->email }} · {{ $u->roleLabel() }}</span>
+            <a href="{{ route('security.index') }}">Security</a>
+            <a href="{{ route('appearance.edit') }}">Appearance</a>
             <form method="post" action="{{ route('logout') }}">@csrf<button type="submit">Sign out</button></form>
         </div>
     </header>

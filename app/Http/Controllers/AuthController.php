@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Services\Audit;
+use App\Services\SignIn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,11 @@ class AuthController extends Controller
 
     public function callback(Request $request): RedirectResponse
     {
+        // Someone already signed in coming back from Google is confirming it is them, not signing in.
+        if ($request->user()) {
+            return $this->confirmed($request);
+        }
+
         try {
             $google = Socialite::driver('google')->user();
         } catch (Throwable $e) {
@@ -58,13 +64,44 @@ class AuthController extends Controller
 
         $user->forceFill([
             'google_id' => $google->getId(),
-            'last_login_at' => now(),
             'name' => $user->name ?: ($google->getName() ?: $email),
         ])->save();
 
-        Auth::login($user);
-        $request->session()->regenerate();
-        Audit::record($user, 'auth.login', $email);
+        // Google alone is not enough for someone who has a second factor: park them until they prove it.
+        if ($user->hasTwoFactor()) {
+            $request->session()->regenerate();
+            $request->session()->put('two_factor', ['id' => $user->id, 'at' => now()->timestamp]);
+
+            return redirect()->route('two-factor.challenge');
+        }
+
+        SignIn::complete($request, $user, 'google');
+
+        return redirect()->intended(route('dashboard'));
+    }
+
+    /** Google confirmed the already signed-in person again (step-up for people without a second factor). */
+    private function confirmed(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $asked = (int) $request->session()->pull('reauth', 0);
+
+        try {
+            $google = Socialite::driver('google')->user();
+        } catch (Throwable $e) {
+            $google = null;
+        }
+
+        $same = $google && strtolower((string) $google->getEmail()) === $user->email && (! $user->google_id || $user->google_id === $google->getId());
+        // Only a confirmation we asked for, a few minutes ago, counts.
+        if (! $same || ! $asked || now()->timestamp - $asked > 600) {
+            Audit::record($user, 'auth.confirm', $user->email, null, ['method' => 'google'], 'denied');
+
+            return redirect()->route('confirm.show')->withErrors(['code' => 'Google could not confirm it is you. Try again.']);
+        }
+
+        $request->session()->put('confirmed_at', now()->timestamp);
+        Audit::record($user, 'auth.confirm', $user->email, null, ['method' => 'google']);
 
         return redirect()->intended(route('dashboard'));
     }

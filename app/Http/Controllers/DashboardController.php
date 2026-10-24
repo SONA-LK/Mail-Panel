@@ -7,12 +7,13 @@ use App\Models\Mailbox;
 use App\Models\PendingDeletion;
 use App\Models\SyncRun;
 use App\Services\HealthService;
+use App\Services\SecurityOverview;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 class DashboardController extends Controller
 {
-    public function __invoke(HealthService $health)
+    public function __invoke(HealthService $health, SecurityOverview $security)
     {
         $domains = auth()->user()->visibleDomains()->orderBy('name')->get();
         $ids = $domains->pluck('id');
@@ -43,6 +44,7 @@ class DashboardController extends Controller
             'syncErrors' => SyncRun::whereIn('domain_id', $ids)->whereNotNull('errors')->where('started_at', '>=', now()->subDay())->latest('started_at')->limit(5)->get(),
             'eligible' => PendingDeletion::with('domain')->whereIn('domain_id', $ids)->where('delete_after', '<=', now())->get(),
             'warnPct' => $warn,
+            'security' => auth()->user()->isSuperAdmin() ? $security->items() : null,
         ]);
     }
 }

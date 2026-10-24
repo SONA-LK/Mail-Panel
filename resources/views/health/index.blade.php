@@ -16,7 +16,7 @@
                 <tr><th>Check</th><th>Status</th><th>Detail</th><th>What to do</th></tr>
                 @foreach($r['checks'] as $c)
                     <tr><td>{{ $c['name'] }}</td><td><span class="badge {{ $c['status'] }}">{{ $c['status'] }}</span></td>
-                        <td class="small" style="word-break:break-all">{{ $c['detail'] }}</td><td class="small">{{ $c['hint'] }}</td></tr>
+                        <td class="small wrap">{{ $c['detail'] }}</td><td class="small">{{ $c['hint'] }}</td></tr>
                 @endforeach
             </table>
         @else<p class="muted">Not checked yet.</p>@endif

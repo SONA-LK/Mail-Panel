@@ -11,6 +11,17 @@
     <div class="flash warn">{{ $p->address }} has been suspended long enough to be deleted (since {{ $p->delete_after->format('Y-m-d') }}). <a href="{{ route('mailboxes.index', ['q' => $p->address]) }}">Review</a></div>
 @endforeach
 
+@if($security)
+<div class="card">
+    <h2>Security</h2>
+    <table>
+        @foreach($security as $s)
+            <tr><td>{{ $s['label'] }}</td><td><span class="badge {{ $s['level'] === 'ok' ? 'ok' : ($s['level'] === 'warn' ? 'warn' : 'bad') }}">{{ $s['value'] }}</span></td><td class="small muted">{{ $s['hint'] }}</td></tr>
+        @endforeach
+    </table>
+</div>
+@endif
+
 <div class="grid">
 @forelse($rows as $r)
     @php($d = $r['domain'])

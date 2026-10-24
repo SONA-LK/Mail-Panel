@@ -2,6 +2,14 @@
 
 For domain managers and read-only users. Sign in with the Google account a super admin approved. You only see the domains assigned to you.
 
+## Your sign-in security
+
+Open **Security** (top right). Add an authenticator app (scan the picture with your phone) or a passkey (your device's face, fingerprint or PIN, or a hardware key). Save the recovery codes it shows: they are shown only once and each works one time if you lose your phone. The page also lists every device you are signed in on; sign out any you do not recognise. For sensitive changes the panel asks you to confirm it is you again; type the code from your app or use your passkey, then repeat what you were doing.
+
+## Make the panel look the way you like
+
+Open **Appearance** (top right). Choose light, dark or match your device, and comfortable or compact spacing. If your company allows it you can also pick an accent colour. Your choices follow you to every device.
+
 ## Create a mailbox
 1. **Mailboxes, New mailbox**.
 2. Pick the domain and type the name before the `@`. The domain may require a pattern such as `first.last`.

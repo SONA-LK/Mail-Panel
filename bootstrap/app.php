@@ -1,9 +1,12 @@
 <?php
 
+use App\Http\Middleware\AbsoluteSessionLifetime;
 use App\Http\Middleware\ActiveUser;
 use App\Http\Middleware\InstallerOpen;
 use App\Http\Middleware\InstallerUnlocked;
 use App\Http\Middleware\RedirectToInstaller;
+use App\Http\Middleware\RequireFreshConfirmation;
+use App\Http\Middleware\RequireTwoFactor;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SuperAdmin;
 use Illuminate\Foundation\Application;
@@ -18,7 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(prepend: [RedirectToInstaller::class], append: [SecurityHeaders::class]);
-        $middleware->alias(['active' => ActiveUser::class, 'super' => SuperAdmin::class, 'install.open' => InstallerOpen::class, 'install.unlocked' => InstallerUnlocked::class]);
+        $middleware->alias(['active' => ActiveUser::class, 'session.age' => AbsoluteSessionLifetime::class, 'super' => SuperAdmin::class, '2fa' => RequireTwoFactor::class, 'fresh' => RequireFreshConfirmation::class, 'install.open' => InstallerOpen::class, 'install.unlocked' => InstallerUnlocked::class]);
         $middleware->redirectGuestsTo(fn () => route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {

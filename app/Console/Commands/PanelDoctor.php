@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\User;
+use App\Services\AuditChain;
 use App\Services\CpanelClient;
 use App\Services\CpanelException;
 use App\Services\WorkerStatus;
@@ -22,6 +24,9 @@ class PanelDoctor extends Command
             $this->line(sprintf(' [%s] %-34s %s', $ok ? ' ok ' : 'FAIL', $label, $detail));
             $bad += $ok ? 0 : 1;
         };
+
+        // Advice that should be seen but does not make the command fail.
+        $note = fn (string $label, bool $ok, string $detail = '') => $this->line(sprintf(' [%s] %-34s %s', $ok ? ' ok ' : 'warn', $label, $detail));
 
         $this->line('This is what the command line PHP sees. Run it with the same php as your cron entry.');
         $this->line(' PHP binary: '.PHP_BINARY.' ('.PHP_SAPI.')');
@@ -52,6 +57,18 @@ class PanelDoctor extends Command
             $row('cPanel API', false, 'not configured in .env');
         }
 
+        $row('PHP GD (logo upload)', extension_loaded('gd'), extension_loaded('gd') ? 'loaded' : 'missing: logos cannot be uploaded');
+        $row('APP_DEBUG is off', ! config('app.debug') || ! app()->isProduction(), config('app.debug') ? 'on' : 'off');
+        $row('APP_URL uses https', str_starts_with((string) config('app.url'), 'https://') || ! app()->isProduction(), (string) config('app.url').' (passkeys need the exact https address)');
+        $row('Session cookie is secure', config('session.secure') === true || ! app()->isProduction(), 'SESSION_SECURE_COOKIE='.var_export(config('session.secure'), true));
+        $supers = User::where('role', User::ROLE_SUPER)->where('active', true)->withExists('passkeys')->get();
+        $note('At least 2 super admins', $supers->count() >= 2, $supers->count().' (one is a single point of failure, and four-eyes approval needs two)');
+        $without = $supers->filter(fn ($u) => ! $u->hasTwoFactor())->count();
+        $note('Super admins have a second step', $without === 0, $without ? "{$without} without one (they are asked at next sign-in)" : 'all');
+        $triggers = AuditChain::triggersInstalled();
+        $note('Audit log locked in the database', $triggers, $triggers ? 'triggers present' : 'no triggers (the hash chain still detects tampering)');
+        $chain = (new AuditChain)->verify();
+        $row('Audit log hash chain', $chain['ok'], $chain['ok'] ? $chain['checked'].' chained row(s) intact' : (string) $chain['reason']);
         $row('Queue driver is "database"', config('queue.default') === 'database', (string) config('queue.default'));
 
         $s = $worker->summary();

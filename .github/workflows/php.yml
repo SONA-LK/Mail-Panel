@@ -1,39 +1,71 @@
-name: PHP Composer
+name: Tests and security checks
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  schedule:
+    # Weekly, so a newly published advisory for a locked dependency shows up even when nobody pushes.
+    - cron: '17 5 * * 1'
 
 permissions:
   contents: read
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: [ '8.2', '8.3', '8.4' ]
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Set up PHP ${{ matrix.php }}
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php }}
+        extensions: mbstring, openssl, pdo_sqlite, gd, fileinfo, bcmath, curl
+        coverage: none
 
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
 
     - name: Cache Composer packages
-      id: composer-cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: vendor
-        key: ${{ runner.os }}-php-${{ hashFiles('**/composer.lock') }}
+        key: ${{ runner.os }}-php${{ matrix.php }}-${{ hashFiles('**/composer.lock') }}
         restore-keys: |
-          ${{ runner.os }}-php-
+          ${{ runner.os }}-php${{ matrix.php }}-
 
     - name: Install dependencies
-      run: composer install --prefer-dist --no-progress
+      run: composer install --prefer-dist --no-progress --no-interaction
 
-    # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
-    # Docs: https://getcomposer.org/doc/articles/scripts.md
+    - name: Prepare the test environment
+      run: cp .env.example .env && php artisan key:generate
 
-    # - name: Run test suite
-    #   run: composer run-script test
+    - name: Run the test suite
+      run: php artisan test
+
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: mbstring, openssl, pdo_sqlite, gd
+        coverage: none
+
+    - name: Install dependencies
+      run: composer install --prefer-dist --no-progress --no-interaction
+
+    # Fails the build when a locked package has a published security advisory.
+    - name: Composer audit
+      run: composer audit --locked
+
+    - name: Production-only install still works (what the release zip ships)
+      run: composer install --no-dev --prefer-dist --no-progress --no-interaction --dry-run

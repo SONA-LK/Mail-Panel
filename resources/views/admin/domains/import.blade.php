@@ -11,7 +11,7 @@
     @csrf
     <div class="card">
         @foreach($available as $name)
-            <label style="display:block;margin:.3rem 0"><input type="checkbox" name="domains[]" value="{{ $name }}" checked> {{ $name }}</label>
+            <label class="rowlabel"><input type="checkbox" name="domains[]" value="{{ $name }}" checked> {{ $name }}</label>
         @endforeach
     </div>
     <p><button type="submit">Import selected</button> <a class="btn sec" href="{{ route('admin.domains.index') }}">Cancel</a></p>

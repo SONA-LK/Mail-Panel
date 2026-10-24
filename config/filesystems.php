@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Nothing in the panel uses signed storage URLs (the logo is served by a controller), so no route exposes this disk.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

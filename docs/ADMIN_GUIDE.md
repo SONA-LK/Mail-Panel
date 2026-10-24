@@ -1,6 +1,6 @@
 # Admin guide
 
-For super admins. Covers the routine jobs: token rotation, cron, sync, backup and restore.
+For super admins. Covers the routine jobs: token rotation, cron, sync, backup and restore, plus security settings, alerts and approvals. When something looks wrong: [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md).
 
 ## Installing and re-running setup
 
@@ -17,6 +17,53 @@ A fresh upload starts the setup wizard by itself (see the README). Once finished
 | Read-only | View assigned domains and the audit entries for them |
 
 Rules the panel enforces: the last active super admin cannot be demoted, disabled or deleted; a disabled user is signed out on their next click. **Keep at least two super admins** so one lost Google account cannot lock everyone out. If it happens anyway, run `php artisan panel:make-admin email@example.com` on the server.
+
+## Branding and themes (Branding menu)
+
+Super admins set the company look once: product name, logo (PNG, JPG or WebP up to 1 MB, rebuilt as PNG, SVG refused), button colour, top-bar colour and font. Use **Preview** to see the whole panel in the new colours before saving. Link and text colours are adjusted automatically so they stay readable in light and dark mode. Every save is kept as a version; **Restore** brings an older one back. Tick *Let each person pick their own accent colour* to allow the four built-in palettes. Light, dark and spacing are always personal (Appearance, top right). Logo upload needs the PHP GD extension.
+
+## Second sign-in step (2-step)
+
+Google proves who someone is; the second step proves it is really them holding the account. Supported: an authenticator app and passkeys / security keys (Face ID, Windows Hello, YubiKey). Roles in `PANEL_2FA_REQUIRED_ROLES` (default `super_admin`) can do nothing but set one up until they have; a required role cannot remove its last method. Everyone else may add one on **Security** (top right).
+
+- **`APP_URL` must be the exact address people open, over https.** Passkeys are bound to that address; a different host, or a forged Host header, is refused.
+- **Lost phone and codes:** another super admin opens Users and presses **Reset 2-step** (signs that person out everywhere; they set up again at next sign-in). If the only super admin is locked out, run `php artisan panel:2fa-reset their@email` on the server.
+- **Changing `APP_KEY` later** makes stored authenticator secrets unreadable; reset the second step for everyone afterwards.
+- **Confirmation for sensitive changes** (`PANEL_STEP_UP_MINUTES`, default 10): password resets, mailbox delete, catch-all, bulk confirm, users, domains, branding and sign-in method changes ask for a code or passkey, or Google again for people without a second step. Reading pages never asks. 0 turns it off.
+- Wrong answers are counted per person *and address* (5 in 10 minutes locks that address), and per person across all addresses (25 in an hour), so someone guessing with a stolen Google account cannot easily lock the real owner out. Recovery codes are deleted when the last second step is removed.
+- Every wrong code, lock-out, recovery-code use and reset is in the audit log.
+
+## Session and rate limits
+
+`PANEL_SESSION_ABSOLUTE_MINUTES` (default 720) ends a sign-in after that long however active it is; `SESSION_LIFETIME` is the idle limit. `PANEL_WRITES_PER_MINUTE` (default 60) caps changes per person per minute. Changing a user's role or disabling them signs them out of every browser at once.
+
+## Security overview and alerts
+
+The dashboard shows a **Security** card to super admins: super admins without a second step, how many people use one, denied sign-ins and lock-outs in the last 24 hours, signed-in devices, waiting approvals, audit log integrity, whether the database locks the audit log, the age of the cPanel token, and warnings for `APP_DEBUG` on or a non-https `APP_URL`. Anything not green has a hint next to it. `php artisan panel:doctor` prints the same checks (and more) from the command line.
+
+**Alert emails** go to every active super admin, and are queued, so they leave within a minute of cron running and never slow a page. They fire for: second-step lock-outs, recovery code use, sign-in methods added or removed, resets, user removal, a new or changed super admin, branding changes, domain removal, bulk import start, approval requests and decisions, five denied sign-ins in ten minutes, and a failed audit check. A person also gets a mail about their own sign-in method changes and about a sign-in from an address they have not used in 90 days. They need working `MAIL_` settings; turn them off with `PANEL_SECURITY_ALERTS=false`.
+
+## Four-eyes approval (Approvals menu)
+
+Removing a **domain** from the panel, removing a **super admin**, or taking a super admin's rights away (demoting or disabling them) needs a second super admin to approve (only when two or more are active; with one there is nobody to ask, and the change goes through, audited). The first admin asks, the Approvals page shows the request with a count in the menu, a *different* super admin presses **Approve and do it** (or Reject). Requests expire after 48 hours, the "last super admin" rule is checked again at approval, and both steps are audited and alerted. Switch off with `PANEL_FOUR_EYES=false`.
+
+## Audit log integrity
+
+Each audit row stores a keyed hash of itself and of the row before it (keyed with `APP_KEY`), so someone who can only reach the database cannot edit, remove or insert rows without it being found. A checkpoint file (`storage/app/audit-head.json`) also exposes rows cut off the end. Where the database user has the `TRIGGER` privilege the database additionally refuses to change or delete rows. `php artisan panel:audit-verify` checks it (the scheduler runs it daily at 05:00); a failure alerts the super admins and is on the dashboard. What to do about it: [INCIDENT_RESPONSE.md](INCIDENT_RESPONSE.md). Rows from before this feature stay unchained and are reported as "older rows".
+
+## Settings reference (`.env`)
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `PANEL_2FA_REQUIRED_ROLES` | `super_admin` | Roles that must have a second step (comma separated, empty = nobody) |
+| `PANEL_STEP_UP_MINUTES` | `10` | How long a confirmation covers sensitive changes (0 = off) |
+| `PANEL_SESSION_ABSOLUTE_MINUTES` | `720` | Longest a sign-in can last |
+| `PANEL_WRITES_PER_MINUTE` | `60` | Changes one person may make per minute |
+| `PANEL_SECURITY_ALERTS` | `true` | Email alerts to super admins |
+| `PANEL_FOUR_EYES` | `true` | Second super admin approves domain and super admin removal |
+| `PANEL_SECURITY_CONTACT` | empty | `mailto:` or `https:` contact published at `/.well-known/security.txt` (hidden while empty) |
+| `CPANEL_TOKEN_CREATED` | empty | `YYYY-MM-DD` of the token, so the dashboard can warn when it is old |
+| `PANEL_AUDIT_HEAD_PATH` | `storage/app/audit-head.json` | Checkpoint file (empty = off) |
 
 ## Per-domain settings (Domains menu)
 
@@ -49,7 +96,7 @@ Nightly, plus **Settings, Sync all / per domain** (queued, starts within a minut
 
 ## Rotating the API token (quarterly, or at once if leaked or an admin leaves)
 1. cPanel, Security, Manage API Tokens: create a new token.
-2. Edit `.env` on the server: `CPANEL_TOKEN=...`
+2. Edit `.env` on the server: `CPANEL_TOKEN=...` and `CPANEL_TOKEN_CREATED=` today's date (the dashboard warns at 90 days and complains at 180)
 3. `php artisan config:cache`
 4. Settings, **Test connection**.
 5. Revoke the old token in cPanel.
@@ -63,7 +110,7 @@ Restore (test this once, then every month):
 ```
 gunzip < db-YYYYMMDD-HHMMSS.sql.gz | mysql -u DBUSER -p DBNAME
 ```
-then `php artisan migrate --force` and `php artisan config:cache`. Restoring the panel database never touches mailboxes; cPanel owns those. After a restore, run **Sync all domains** to refresh the cache.
+then `php artisan migrate --force` and `php artisan config:cache`. Restoring the panel database never touches mailboxes; cPanel owns those. After a restore, run **Sync all domains** to refresh the cache, and `php artisan panel:audit-verify --reanchor="restored backup of <date>"` (the restored log is shorter than the checkpoint, which would otherwise look like cut-off rows). Keep the same `APP_KEY` as the backup: it decrypts the authenticator secrets and keys the audit hashes.
 
 ## Weekly and monthly routine
 - Weekly: failed jobs, sync results, quota warnings, domain health.

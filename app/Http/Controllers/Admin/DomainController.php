@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Domain;
+use App\Models\ApprovalRequest;
+use App\Services\Approvals;
 use App\Services\Audit;
 use App\Services\CpanelException;
 use App\Services\DomainImporter;
@@ -68,8 +70,15 @@ class DomainController extends Controller
         return redirect()->route('admin.domains.index')->with('status', 'Domain settings saved.');
     }
 
-    public function destroy(Request $request, Domain $domain)
+    public function destroy(Request $request, Domain $domain, Approvals $approvals)
     {
+        // Hard to take back, so a second super admin has to agree (when there is one).
+        if ($approvals->required()) {
+            $approvals->request($request->user(), ApprovalRequest::DOMAIN_REMOVE, $domain->name, ['domain_id' => $domain->id]);
+
+            return redirect()->route('admin.domains.index')->with('status', "Removing {$domain->name} needs a second super admin to approve it (Approvals menu). Nothing was removed yet.");
+        }
+
         // Removes only the panel's record and cache. Nothing is deleted in cPanel.
         Audit::record($request->user(), 'domain.remove', $domain->name, $domain);
         $domain->delete();

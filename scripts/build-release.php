@@ -26,7 +26,7 @@ $dist = $root.'/dist';
 // Anything matching is left out of the zip.
 $exclude = [
     '#^(\.git|\.github|\.idea|\.vscode|\.phpunit\.cache|node_modules|vendor|tests|dist)(/|$)#',
-    '#^(\.env|\.env\.(?!example$).*|\.phpunit\.result\.cache|phpunit\.xml|app\.zip|auth\.json)$#',
+    '#^(\.env|\.env\.(?!example$).*|\.phpunit\.result\.cache|phpunit\.xml|[^/]+\.zip|auth\.json)$#',
     '#^database/.*\.sqlite.*$#',
     '#^storage/logs/(?!\.gitignore$)#',
     '#^storage/framework/(sessions|cache|views|testing)/(?!\.gitignore$)#',

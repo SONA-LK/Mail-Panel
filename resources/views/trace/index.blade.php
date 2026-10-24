@@ -10,6 +10,6 @@
 
 @if($error)<div class="flash warn">{{ $error }}</div>@endif
 @if($result !== null)
-    <div class="card"><pre style="white-space:pre-wrap;margin:0">{{ is_string($result) ? $result : json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre></div>
+    <div class="card"><pre class="pre">{{ is_string($result) ? $result : json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre></div>
 @endif
 @endsection

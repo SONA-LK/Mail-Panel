@@ -132,6 +132,6 @@ class AuthTest extends TestCase
 
         $response->assertHeader('X-Frame-Options', 'DENY');
         $response->assertHeader('X-Content-Type-Options', 'nosniff');
-        $this->assertStringContainsString("default-src 'self'", $response->headers->get('Content-Security-Policy'));
+        $this->assertStringContainsString("default-src 'none'", $response->headers->get('Content-Security-Policy'));
     }
 }

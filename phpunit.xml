@@ -23,6 +23,10 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <env name="PANEL_2FA_REQUIRED_ROLES" value=""/>
+        <env name="PANEL_STEP_UP_MINUTES" value="0"/>
+        <env name="PANEL_SECURITY_ALERTS" value="false"/>
+        <env name="PANEL_AUDIT_HEAD_PATH" value=""/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>

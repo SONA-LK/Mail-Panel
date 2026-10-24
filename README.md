@@ -12,6 +12,9 @@ It is **not a webmail client**. People still read mail in cPanel webmail or any 
 - Bulk create from CSV with a dry run, run in the background
 - Import your existing cPanel domains in one click; nightly sync picks up changes made in cPanel
 - Sign-in with Google only (no passwords stored), roles per domain: super admin, domain manager, read-only
+- Second step with an authenticator app or passkeys / security keys (required for super admins), recovery codes, device list, confirmation before sensitive changes
+- White-label branding (name, logo, colours, font) with versions, and personal light / dark / compact settings for each person
+- Security alerts by email, four-eyes approval for removing domains or super admins, tamper-evident audit log with a daily integrity check
 - Domain health (SPF, DKIM, DMARC, MX), delivery trace, append-only audit log
 - First-run web installer, so you do not need a terminal
 
@@ -57,8 +60,14 @@ Upload the new release over the old folder (keep `.env` and `storage/`), then ru
 
 - The API token and database password live only in `.env` (mode 600), never in the database, pages or logs
 - Sign-in is Google only; every action is checked server-side against the user's role and domains
-- Passwords for new mailboxes are shown once and never stored; the audit log is append-only and scrubs secrets
+- Passwords for new mailboxes are shown once and never stored; the audit log scrubs secrets, is append-only (enforced in the database where allowed) and hash-chained so edits, removals and insertions are detected
+- A second step (authenticator app or passkey) is required for super admins; passkeys are pinned to `APP_URL`, wrong answers lock the step, recovery codes are stored hashed
+- Sensitive changes ask for a fresh confirmation; removing a domain or a super admin needs a second super admin; changes per person per minute and total sign-in age are capped
+- Strict Content-Security-Policy (no inline script or style), hardened headers, uploaded logos are re-encoded and SVG is refused; every route is covered by an automated access-control test
+- Super admins get email alerts for risky events; the dashboard shows a security card; `php artisan panel:doctor` checks the setup
 - The installer is protected by a one-time code and disappears after setup; no default accounts exist
+
+Operations: [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md), what to do when something looks wrong: [docs/INCIDENT_RESPONSE.md](docs/INCIDENT_RESPONSE.md).
 
 Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
 

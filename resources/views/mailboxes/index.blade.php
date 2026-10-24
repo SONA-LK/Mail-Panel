@@ -29,7 +29,7 @@
             <td><a href="{{ route('mailboxes.show', $m) }}">{{ $m->address }}</a></td>
             <td>
                 @if($pct === null)<span class="muted">{{ $m->used_mb }} MB / unlimited</span>
-                @else<span class="bar {{ $pct >= 95 ? 'bad' : ($pct >= $warnPct ? 'warn' : '') }}"><i style="width:{{ min(100, $pct) }}%"></i></span>
+                @else<span class="bar {{ $pct >= 95 ? 'bad' : ($pct >= $warnPct ? 'warn' : '') }}"><i class="w{{ (int) round(min(100, max(0, $pct))) }}"></i></span>
                     <span class="small">{{ $m->used_mb }} / {{ $m->quota_mb }} MB ({{ $pct }}%)</span>@endif
             </td>
             <td><span class="badge {{ $m->isSuspended() ? 'warn' : 'ok' }}">{{ $m->statusLabel() }}</span></td>

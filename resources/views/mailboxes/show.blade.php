@@ -15,7 +15,7 @@
             @if($mailbox->usagePercent() !== null) ({{ $mailbox->usagePercent() }}%)@endif</p>
         @if($canManage)
         <form method="post" action="{{ route('mailboxes.quota', $mailbox) }}">@csrf
-            <input type="number" name="quota_mb" min="1" max="{{ config('cpanel.max_quota_mb') }}" value="{{ $mailbox->quota_mb }}" required style="width:140px">
+            <input type="number" name="quota_mb" min="1" max="{{ config('cpanel.max_quota_mb') }}" value="{{ $mailbox->quota_mb }}" required class="w140">
             <button class="sm" type="submit">Change quota</button>
         </form>
         @endif
@@ -92,11 +92,11 @@
     <form method="post" action="{{ route('mailboxes.filters.store', $mailbox) }}">@csrf
         <label>Name</label><input type="text" name="name" required maxlength="80">
         <label>If</label>
-        <select name="field" style="width:auto"><option value="from">From</option><option value="to">To</option><option value="subject">Subject</option></select>
-        <select name="match" style="width:auto"><option value="contains">contains</option><option value="equals">equals</option><option value="begins">begins with</option><option value="ends">ends with</option></select>
+        <select name="field" class="auto"><option value="from">From</option><option value="to">To</option><option value="subject">Subject</option></select>
+        <select name="match" class="auto"><option value="contains">contains</option><option value="equals">equals</option><option value="begins">begins with</option><option value="ends">ends with</option></select>
         <input type="text" name="value" required maxlength="200">
         <label>Then</label>
-        <select name="action" style="width:auto"><option value="discard">Discard</option><option value="redirect">Redirect to address</option><option value="move">Move to folder</option></select>
+        <select name="action" class="auto"><option value="discard">Discard</option><option value="redirect">Redirect to address</option><option value="move">Move to folder</option></select>
         <input type="text" name="destination" placeholder="address or folder name (not needed for discard)" maxlength="200">
         <p><button class="sm" type="submit">Save filter</button></p>
     </form>

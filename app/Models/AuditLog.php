@@ -13,7 +13,7 @@ class AuditLog extends Model
 
     protected $table = 'audit_log';
 
-    protected $fillable = ['user_id', 'user_email', 'action', 'target', 'domain_id', 'details', 'result', 'ip', 'created_at'];
+    protected $fillable = ['user_id', 'user_email', 'action', 'target', 'domain_id', 'details', 'result', 'ip', 'created_at', 'prev_hash', 'hash'];
 
     protected function casts(): array
     {

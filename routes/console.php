@@ -16,4 +16,5 @@ Schedule::command('queue:work --stop-when-empty --max-jobs='.config('cpanel.bulk
 Schedule::command('panel:sync')->dailyAt('02:30')->withoutOverlapping();
 Schedule::command('panel:health')->dailyAt('03:30');
 Schedule::command('panel:process-deletions')->dailyAt('04:00');
+Schedule::command('panel:audit-verify')->dailyAt('05:00');
 Schedule::command('queue:prune-failed --hours=720')->weekly();

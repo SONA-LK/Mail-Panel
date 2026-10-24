@@ -23,4 +23,5 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /dist
-/app.zip
+/*.zip
+/cpaneluser_*
